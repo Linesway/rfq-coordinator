@@ -262,8 +262,12 @@ async fn prompt_side(has_bid: bool, has_ask: bool, deadline: u64) -> Result<Opti
         line
     });
 
-    // Redraw the prompt with a countdown until the user answers or the
+    // The countdown lives on its own line ABOVE the prompt, so redrawing it
+    // never clobbers what the user is typing. Updates save the cursor
+    // (ESC 7), rewrite the countdown line, and restore the cursor (ESC 8),
+    // leaving the input line untouched. Runs until the user answers or the
     // accept deadline passes (which falls through as a decline).
+    let mut drawn = false;
     let line = loop {
         let left_ms = deadline.saturating_sub(unix_millis());
         if left_ms == 0 {
@@ -271,7 +275,14 @@ async fn prompt_side(has_bid: bool, has_ask: bool, deadline: u64) -> Result<Opti
             println!("accept window elapsed");
             break String::new();
         }
-        print!("\r\x1b[K{prompt}? ({}s left) ", left_ms.div_ceil(1000));
+        let secs = left_ms.div_ceil(1000);
+        if !drawn {
+            println!("({secs}s left)");
+            print!("{prompt}? ");
+            drawn = true;
+        } else {
+            print!("\x1b7\x1b[1A\r\x1b[K({secs}s left)\x1b8");
+        }
         std::io::stdout().flush().ok();
         // Sleep to just past the next whole-second boundary before redrawing.
         let boundary = left_ms % 1000;
