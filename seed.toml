@@ -1,0 +1,93 @@
+# Default seed for local development; read via --seed.
+#
+# Units: `usd` is micro-USD (1_000_000 = $1). Asset balances are lots;
+# 1 whole unit = 10^lot_decimals lots.
+
+[assets.BTC]
+lot_decimals = 5
+
+[assets.ETH]
+lot_decimals = 4
+
+[assets.SOL]
+lot_decimals = 3
+
+[assets.DOGE]
+lot_decimals = 0
+
+[assets.HYPE]
+lot_decimals = 2
+
+[assets.AAPL]
+lot_decimals = 2
+
+# ---------------------------------------------------------------------------
+# Traders. Pubkeys correspond to the keypairs in keys/.
+# ---------------------------------------------------------------------------
+
+[[traders]]
+name = "taker"
+pubkey = "b124bd049b204df5732b548ae0b6fcfded68ac372ffb084903366dfcbef227ec"
+usd = 1_000_000_000_000 # $1,000,000
+
+[traders.assets]
+BTC = 200_000     # 2 BTC
+ETH = 100_000     # 10 ETH
+SOL = 500_000     # 500 SOL
+DOGE = 20_000     # 20,000 DOGE
+HYPE = 20_000     # 200 HYPE
+AAPL = 5_000      # 50 AAPL
+
+[[traders]]
+name = "maker-tight"
+pubkey = "1be1a67f6639b1c831b57fe7fb9cfd275cf6ad92c14d5a59804efb564007e26e"
+usd = 5_000_000_000_000 # $5,000,000
+
+[traders.assets]
+BTC = 1_000_000   # 10 BTC
+ETH = 1_000_000   # 100 ETH
+SOL = 5_000_000   # 5,000 SOL
+DOGE = 200_000    # 200,000 DOGE
+HYPE = 500_000    # 5,000 HYPE
+AAPL = 100_000    # 1,000 AAPL
+
+[[traders]]
+name = "maker-lazy"
+pubkey = "42e518872e05d9d9d3c276605b1188a0c247ee2ae6ed9748ccdbe2bcff7820e2"
+usd = 5_000_000_000_000 # $5,000,000
+
+[traders.assets]
+BTC = 1_000_000   # 10 BTC
+ETH = 1_000_000   # 100 ETH
+SOL = 5_000_000   # 5,000 SOL
+DOGE = 200_000    # 200,000 DOGE
+HYPE = 500_000    # 5,000 HYPE
+AAPL = 100_000    # 1,000 AAPL
+
+[[traders]]
+name = "maker-skew"
+pubkey = "63d5f44df5c16cce419a8a78d06d8158fd00f3815f6060babeda1178ef133faf"
+usd = 2_000_000_000_000 # $2,000,000
+# Deliberately thin inventory: this maker over-commits sometimes and its
+# strategy prices off what little it holds.
+
+[traders.assets]
+BTC = 100_000     # 1 BTC
+ETH = 100_000     # 10 ETH
+SOL = 1_000_000   # 1,000 SOL
+DOGE = 50_000     # 50,000 DOGE
+HYPE = 50_000     # 500 HYPE
+AAPL = 10_000     # 100 AAPL
+
+[[traders]]
+name = "maker-sniper"
+pubkey = "75e3be995e04cd29e0b3f84ef9c5e67b9cac59882e1fb2ec24021123ee4195d0"
+usd = 5_000_000_000_000 # $5,000,000
+
+[traders.assets]
+BTC = 1_000_000   # 10 BTC
+ETH = 1_000_000   # 100 ETH
+SOL = 5_000_000   # 5,000 SOL
+DOGE = 200_000    # 200,000 DOGE
+HYPE = 500_000    # 5,000 HYPE
+AAPL = 100_000    # 1,000 AAPL

@@ -1,0 +1,13 @@
+# Static fallback mark prices used by the stock makers when the live
+# Phoenix Perps feed is unavailable (or with `--offline`).
+#
+# Values are micro-USD per whole unit of the asset. They only steer where
+# the makers quote — nothing in the protocol depends on them.
+
+[prices]
+BTC = 105_000_000_000 # $105,000
+ETH = 2_400_000_000   # $2,400
+SOL = 78_000_000      # $78
+DOGE = 110_000        # $0.11
+HYPE = 28_000_000     # $28
+AAPL = 205_000_000    # $205
