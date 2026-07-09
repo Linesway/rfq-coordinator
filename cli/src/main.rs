@@ -1,6 +1,7 @@
 //! `rfq-cli` — the taker client for the RFQ coordinator.
 
 use std::collections::BTreeMap;
+use std::io::Write as _;
 use std::time::Duration;
 
 use anyhow::{bail, Context, Result};
@@ -253,20 +254,33 @@ async fn prompt_side(has_bid: bool, has_ask: bool, deadline: u64) -> Result<Opti
         options.push("[s]ell");
     }
     options.push("[d]ecline");
-    println!("{}? ", options.join(" / "));
+    let prompt = options.join(" / ");
 
-    let time_left = Duration::from_millis(deadline.saturating_sub(unix_millis()));
-    let line = tokio::time::timeout(time_left, async {
-        tokio::task::spawn_blocking(|| {
-            let mut line = String::new();
-            std::io::stdin().read_line(&mut line).ok();
-            line
-        })
-        .await
-        .unwrap_or_default()
-    })
-    .await
-    .unwrap_or_default();
+    let mut input = tokio::task::spawn_blocking(|| {
+        let mut line = String::new();
+        std::io::stdin().read_line(&mut line).ok();
+        line
+    });
+
+    // Redraw the prompt with a countdown until the user answers or the
+    // accept deadline passes (which falls through as a decline).
+    let line = loop {
+        let left_ms = deadline.saturating_sub(unix_millis());
+        if left_ms == 0 {
+            println!();
+            println!("accept window elapsed");
+            break String::new();
+        }
+        print!("\r\x1b[K{prompt}? ({}s left) ", left_ms.div_ceil(1000));
+        std::io::stdout().flush().ok();
+        // Sleep to just past the next whole-second boundary before redrawing.
+        let boundary = left_ms % 1000;
+        let tick = if boundary == 0 { 1000 } else { boundary } + 5;
+        tokio::select! {
+            line = &mut input => break line.unwrap_or_default(),
+            _ = tokio::time::sleep(Duration::from_millis(tick)) => {}
+        }
+    };
 
     Ok(match line.trim() {
         "b" | "buy" if has_ask => Some(Side::Buy),

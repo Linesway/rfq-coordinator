@@ -34,3 +34,4 @@ submit *args:
 balances:
     cargo run --release -p cli -- --server {{server_url}} balances
 
+
