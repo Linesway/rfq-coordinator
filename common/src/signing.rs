@@ -14,7 +14,7 @@
 //! ```
 //!
 //! where the action name and the exact field order for each action are
-//! defined in `PROTOCOL.md` (and implemented by [`SignablePayload`] below).
+//! defined by that action's [`SignablePayload`] impl in [`crate::types`].
 //! Absent optional fields are rendered as the literal `-`.
 //!
 //! Nonces must be strictly increasing per pubkey across ALL action types.
@@ -32,7 +32,7 @@ pub const DOMAIN: &str = "rfq-v1";
 pub trait SignablePayload {
     /// The action name, e.g. `submit_rfq`.
     fn action(&self) -> &'static str;
-    /// The signed fields, in the order given in `PROTOCOL.md`.
+    /// The signed fields, in the exact order the server must verify them.
     /// Absent optional fields must be rendered as `-`.
     fn signed_fields(&self) -> Vec<String>;
 }
