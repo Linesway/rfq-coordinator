@@ -7,7 +7,7 @@
 //! |----------|----------|
 //! | `tight`  | instant two-sided quotes at ±10 bps, exact RFQ size, always tags orders with a `client_order_id`; cancel/replaces on every mark-price tick |
 //! | `lazy`   | waits 500 ms, quotes wide (±150 bps) at 3× the RFQ size; quotes only the useful side when the taker's direction is visible; re-quotes when the mark drifts ≥ 15 bps |
-//! | `skew`   | prices off its own inventory (via `/v1/balances/{pubkey}`) and occasionally over-commits on purpose, expecting `insufficient_balance`; re-quotes on ≥ 5 bps moves |
+//! | `skew`   | prices off its own inventory (via `/v1/balances/{pubkey}`) and occasionally over-commits on purpose to probe the server's inventory policy; re-quotes on ≥ 5 bps moves |
 //! | `sniper` | ignores 30% of RFQs; otherwise places a wide throwaway quote, then cancels (by `client_order_id`) and re-quotes at ±2 bps off the freshest mark just before the window closes — sometimes deliberately losing the race |
 //!
 //! Pricing comes from live Phoenix Perps websocket streams (Rise SDK) with a
