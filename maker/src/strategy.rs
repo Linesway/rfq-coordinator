@@ -136,7 +136,7 @@ async fn lazy(ctx: &Ctx, rfq: &OpenRfq, mark: u64) -> Result<()> {
 /// Prices off its own inventory: the more of the asset it holds (measured in
 /// multiples of the RFQ size), the lower it shifts both quotes, making it
 /// eager to sell and reluctant to buy. Occasionally over-commits on purpose
-/// to exercise the server's reservation checks. Re-quotes when the mark
+/// to probe how the server polices inventory. Re-quotes when the mark
 /// drifts 5 bps or more (the inventory skew is computed once per RFQ).
 async fn skew(ctx: &Ctx, rfq: &OpenRfq, mark: u64, mut rng: StdRng) -> Result<()> {
     let balances = ctx.client.balances_of(&ctx.client.pubkey()).await?;
@@ -151,14 +151,15 @@ async fn skew(ctx: &Ctx, rfq: &OpenRfq, mark: u64, mut rng: StdRng) -> Result<()
     let skew_bps = 10 - fills_of_inventory; // long => negative => shift down
 
     if rng.gen_bool(0.25) {
-        // Deliberately try to sell more than we have; the server must
-        // reject this with `insufficient_balance` and reserve nothing.
+        // Deliberately try to sell more than we have. How the server handles
+        // this is its inventory policy's call (e.g. reject the order here,
+        // or refuse to let it settle later) — either way is fine with us.
         let mid = with_bps(mark, skew_bps);
         let too_big = lots_available.saturating_add(rfq.size).saturating_mul(2);
         tracing::info!(
             rfq = %rfq.rfq_id,
             size = too_big,
-            "over-committing on purpose (expect insufficient_balance)"
+            "over-committing on purpose (the server may reject this)"
         );
         place(ctx, rfq.rfq_id, Side::Sell, quote_price(mid, Side::Sell, 30), too_big, None).await;
     }

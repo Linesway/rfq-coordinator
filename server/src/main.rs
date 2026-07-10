@@ -1,8 +1,9 @@
 //! The RFQ coordinator server — YOUR implementation goes here.
 //!
 //! This stub compiles, parses the required CLI flags, loads the seed file,
-//! and serves `GET /health`. Everything else is up to you; PROTOCOL.md
-//! specifies the behavior.
+//! and serves `GET /health`. Everything else is up to you; the wire
+//! protocol is defined by the shipped code (`common` and the clients that
+//! use it) — recovering it from there is part of the exercise.
 //!
 //! Contract you must keep (the evaluator relies on it):
 //! - Binary named `server`, built by `cargo build --release -p server`.
@@ -50,26 +51,15 @@ async fn main() -> anyhow::Result<()> {
         seed.traders.len()
     );
 
-    // TODO: replace this with your exchange state. See PROTOCOL.md for the
-    // full endpoint list, signature scheme, RFQ lifecycle, and settlement
-    // rules. `common::types`, `common::signing`, and `common::seed` define
-    // the wire types, the canonical signing message, and the seed schema —
-    // you are encouraged to use them.
+    // TODO: replace this with your exchange state. `common::types`,
+    // `common::signing`, and `common::seed` define the wire types, the
+    // canonical signing message, and the seed schema — you are encouraged
+    // to use them. `common::client` shows every endpoint the shipped
+    // clients call; your server has to answer all of them.
     let _state = Arc::new(seed);
 
     let app = Router::new().route("/health", get(|| async { "ok" }));
-    // TODO: the rest of the routes:
-    //   GET  /v1/assets
-    //   GET  /v1/balances
-    //   GET  /v1/balances/{pubkey}
-    //   GET  /v1/rfqs/{rfq_id}
-    //   POST /v1/rfqs
-    //   POST /v1/orders
-    //   POST /v1/orders/cancel
-    //   POST /v1/accept
-    //   POST /v1/decline
-    //   GET  /ws/makers
-    //   GET  /ws/rfq/{rfq_id}
+    // TODO: the rest of the routes.
 
     let addr = format!("127.0.0.1:{}", args.port);
     let listener = tokio::net::TcpListener::bind(&addr)

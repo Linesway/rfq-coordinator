@@ -1,6 +1,6 @@
 //! Wire types for the RFQ coordinator protocol.
 //!
-//! Units (see PROTOCOL.md):
+//! Units:
 //! - USD amounts are integer micro-USD (1_000_000 = $1).
 //! - Asset sizes are integer lots; each asset defines `lot_decimals`
 //!   (1 whole unit = 10^lot_decimals lots).
@@ -430,8 +430,7 @@ pub struct ApiErrorBody {
     pub message: String,
 }
 
-/// The error codes. See PROTOCOL.md for the HTTP status mapping
-/// and precedence rules.
+/// The error codes, grouped by the HTTP status they ride on.
 pub mod error_codes {
     // 400
     pub const MALFORMED_REQUEST: &str = "malformed_request";
