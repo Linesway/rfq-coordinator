@@ -1,9 +1,5 @@
-//! The RFQ coordinator server — YOUR implementation goes here.
-//!
-//! This stub compiles, parses the required CLI flags, loads the seed file,
-//! and serves `GET /health`. Everything else is up to you; the wire
-//! protocol is defined by the shipped code (`common` and the clients that
-//! use it) — recovering it from there is part of the exercise.
+//! RFQ coordinator executable. Protocol definitions live in `common`;
+//! state transitions and transport handlers live in the server library.
 //!
 //! Contract you must keep (the evaluator relies on it):
 //! - Binary named `server`, built by `cargo build --release -p server`.
@@ -11,11 +7,7 @@
 //!   (default 5).
 //! - Binds 127.0.0.1:<port> and answers `GET /health` with 200 once ready.
 
-use std::sync::Arc;
-
 use anyhow::Context;
-use axum::routing::get;
-use axum::Router;
 use clap::Parser;
 use common::seed::SeedConfig;
 
@@ -38,8 +30,7 @@ struct Args {
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt()
         .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "info".into()),
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()),
         )
         .init();
     let args = Args::parse();
@@ -51,15 +42,8 @@ async fn main() -> anyhow::Result<()> {
         seed.traders.len()
     );
 
-    // TODO: replace this with your exchange state. `common::types`,
-    // `common::signing`, and `common::seed` define the wire types, the
-    // canonical signing message, and the seed schema — you are encouraged
-    // to use them. `common::client` shows every endpoint the shipped
-    // clients call; your server has to answer all of them.
-    let _state = Arc::new(seed);
-
-    let app = Router::new().route("/health", get(|| async { "ok" }));
-    // TODO: the rest of the routes.
+    let state = server::api::App::new(seed, args.accept_window_secs)?;
+    let app = server::api::router(state);
 
     let addr = format!("127.0.0.1:{}", args.port);
     let listener = tokio::net::TcpListener::bind(&addr)

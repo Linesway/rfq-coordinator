@@ -4,8 +4,6 @@ version = "0.1.0"
 edition.workspace = true
 
 [dependencies]
-# The stub only needs these, but everything in the workspace's
-# [workspace.dependencies] is fair game — add whatever you need.
 common.workspace = true
 anyhow.workspace = true
 axum.workspace = true
@@ -16,3 +14,8 @@ tokio.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 uuid.workspace = true
+futures-util.workspace = true
+
+[dev-dependencies]
+reqwest.workspace = true
+tokio-tungstenite.workspace = true
