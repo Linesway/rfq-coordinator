@@ -1,0 +1,106 @@
+[
+  {
+    "requirements": [
+      1,
+      2
+    ],
+    "suite": "r01_r02_requests_use_the_expected_format",
+    "filter": "r01_r02_requests_use_the_expected_format",
+    "runner": "cargo"
+  },
+  {
+    "requirements": [
+      3,
+      20
+    ],
+    "suite": "r03_r20_cli_and_bots_work_offline",
+    "filter": "r03_r20_cli_and_bots_work_offline",
+    "runner": "cargo"
+  },
+  {
+    "requirements": [
+      4,
+      5,
+      6,
+      7,
+      9
+    ],
+    "suite": "r04_r05_r06_r07_r09_ask_for_prices_and_trade",
+    "filter": "r04_r05_r06_r07_r09_ask_for_prices_and_trade",
+    "runner": "cargo"
+  },
+  {
+    "requirements": [
+      8
+    ],
+    "suite": "r08_clients_receive_updates",
+    "filter": "r08_clients_receive_updates",
+    "runner": "cargo"
+  },
+  {
+    "requirements": [
+      10
+    ],
+    "suite": "r10_reject_forged_and_repeated_requests",
+    "filter": "r10_reject_forged_and_repeated_requests",
+    "runner": "cargo"
+  },
+  {
+    "requirements": [
+      11
+    ],
+    "suite": "r11_cannot_promise_the_same_money_twice",
+    "filter": "r11_cannot_promise_the_same_money_twice",
+    "runner": "cargo"
+  },
+  {
+    "requirements": [
+      12
+    ],
+    "suite": "r12_trades_move_money_without_losing_it",
+    "filter": "r12_trades_move_money_without_losing_it",
+    "runner": "cargo"
+  },
+  {
+    "requirements": [
+      13
+    ],
+    "suite": "r13_reject_late_requests_and_free_funds",
+    "filter": "r13_reject_late_requests_and_free_funds",
+    "runner": "cargo"
+  },
+  {
+    "requirements": [
+      14
+    ],
+    "suite": "r14_simultaneous_requests_stay_correct",
+    "filter": "r14_simultaneous_requests_stay_correct",
+    "runner": "cargo"
+  },
+  {
+    "requirements": [
+      15
+    ],
+    "suite": "r15_slow_clients_do_not_block_trades",
+    "filter": "r15_slow_clients_do_not_block_trades",
+    "runner": "cargo"
+  },
+  {
+    "requirements": [
+      16
+    ],
+    "suite": "r16_bad_requests_get_consistent_errors",
+    "filter": "r16_bad_requests_get_consistent_errors",
+    "runner": "cargo"
+  },
+  {
+    "requirements": [
+      17,
+      18,
+      19
+    ],
+    "suite": "r17_r18_r19_server_builds_and_starts",
+    "filter": "r17_r18_r19_server_builds_and_starts",
+    "runner": "cargo"
+  }
+]

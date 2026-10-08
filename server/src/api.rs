@@ -1,7 +1,10 @@
+//! HTTP routes, request decoding, and signed action dispatch.
+
 use crate::{
+    app::App,
     engine::Engine,
     error::{Error, Result},
-    ws,
+    websocket,
 };
 use axum::{
     extract::{
@@ -12,52 +15,15 @@ use axum::{
     Json, Router,
 };
 use common::{
-    seed::SeedConfig,
-    signing::{unix_millis, Envelope},
+    signing::{Envelope, SignablePayload},
     types::*,
+    Pubkey,
 };
-use std::{
-    sync::{Arc, Mutex, MutexGuard},
-    time::{Duration, Instant},
-};
+use std::sync::Arc;
 use uuid::Uuid;
 
-pub struct App {
-    engine: Mutex<Engine>,
-    epoch: u64,
-    started: Instant,
-}
-impl App {
-    pub fn new(seed: SeedConfig, accept_secs: u64) -> anyhow::Result<Arc<Self>> {
-        Ok(Arc::new(Self {
-            engine: Mutex::new(Engine::new(seed, accept_secs)?),
-            epoch: unix_millis(),
-            started: Instant::now(),
-        }))
-    }
-    pub fn now(&self) -> u64 {
-        self.epoch + self.started.elapsed().as_millis() as u64
-    }
-    pub fn lock(&self) -> MutexGuard<'_, Engine> {
-        let mut engine = self.engine.lock().expect("exchange state poisoned");
-        engine.advance(self.now());
-        engine
-    }
-}
 pub fn router(app: Arc<App>) -> Router {
-    // Weak ownership lets this task terminate when a test/server drops its app.
-    let weak = Arc::downgrade(&app);
-    tokio::spawn(async move {
-        let mut ticks = tokio::time::interval(Duration::from_millis(5));
-        ticks.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
-        loop {
-            ticks.tick().await;
-            let Some(app) = weak.upgrade() else {
-                break;
-            };
-            drop(app.lock());
-        }
-    });
+    crate::app::start_deadline_timer(&app);
     Router::new()
         .route("/health", get(|| async { "ok" }))
         .route("/v1/assets", get(assets))
@@ -69,8 +35,8 @@ pub fn router(app: Arc<App>) -> Router {
         .route("/v1/orders/cancel", post(cancel))
         .route("/v1/accept", post(accept))
         .route("/v1/decline", post(decline))
-        .route("/ws/makers", get(ws::makers))
-        .route("/ws/rfq/:id", get(ws::taker))
+        .route("/ws/makers", get(websocket::makers))
+        .route("/ws/rfq/:id", get(websocket::taker))
         .fallback(|| async { Error::malformed("unknown endpoint") })
         .method_not_allowed_fallback(|| async { Error::malformed("unsupported HTTP method") })
         .with_state(app)
@@ -98,23 +64,62 @@ async fn rfq(
     Ok(Json(app.lock().rfq(id)?.view.clone()))
 }
 
-// A single handler pattern guarantees the same authentication/error order.
-macro_rules! action {
-    ($name:ident, $payload:ty, $response:ty, $method:ident $(, $clock:ident)?) => {
-        async fn $name(State(app): State<Arc<App>>, body: std::result::Result<Json<Envelope<$payload>>, JsonRejection>) -> Result<Json<$response>> {
-            let Json(envelope) = body.map_err(Error::malformed)?;
-            let mut engine = app.lock();
-            let owner = engine.authenticate(&envelope)?;
-            // Signature verification takes time; advance again immediately
-            // before the action so authentication cannot stretch a deadline.
-            let now = app.now();
-            engine.advance(now);
-            Ok(Json(engine.$method(owner,envelope.payload $(, { let $clock = now; $clock })?)?))
-        }
-    };
+// All signed actions use the same validation order and hold one lock through mutation.
+fn execute_action<Payload: SignablePayload, Response>(
+    app: &App,
+    body: std::result::Result<Json<Envelope<Payload>>, JsonRejection>,
+    action: impl FnOnce(&mut Engine, Pubkey, Payload, u64) -> Result<Response>,
+) -> Result<Json<Response>> {
+    let Json(envelope) = body.map_err(Error::malformed)?;
+    let mut engine = app.lock();
+    let owner = engine.authenticate(&envelope)?;
+    // The deadline may have passed while verifying the signature.
+    let now = app.now();
+    engine.advance(now);
+    Ok(Json(action(&mut engine, owner, envelope.payload, now)?))
 }
-action!(submit, SubmitRfqPayload, SubmitRfqResponse, submit, now);
-action!(place, PlaceOrderPayload, PlaceOrderResponse, place);
-action!(cancel, CancelOrderPayload, CancelOrderResponse, cancel);
-action!(accept, AcceptPayload, AcceptResponse, accept, now);
-action!(decline, DeclinePayload, DeclineResponse, decline);
+
+async fn submit(
+    State(app): State<Arc<App>>,
+    body: std::result::Result<Json<Envelope<SubmitRfqPayload>>, JsonRejection>,
+) -> Result<Json<SubmitRfqResponse>> {
+    execute_action(&app, body, |engine, owner, payload, now| {
+        engine.submit(owner, payload, now)
+    })
+}
+
+async fn place(
+    State(app): State<Arc<App>>,
+    body: std::result::Result<Json<Envelope<PlaceOrderPayload>>, JsonRejection>,
+) -> Result<Json<PlaceOrderResponse>> {
+    execute_action(&app, body, |engine, owner, payload, _now| {
+        engine.place(owner, payload)
+    })
+}
+
+async fn cancel(
+    State(app): State<Arc<App>>,
+    body: std::result::Result<Json<Envelope<CancelOrderPayload>>, JsonRejection>,
+) -> Result<Json<CancelOrderResponse>> {
+    execute_action(&app, body, |engine, owner, payload, _now| {
+        engine.cancel(owner, payload)
+    })
+}
+
+async fn accept(
+    State(app): State<Arc<App>>,
+    body: std::result::Result<Json<Envelope<AcceptPayload>>, JsonRejection>,
+) -> Result<Json<AcceptResponse>> {
+    execute_action(&app, body, |engine, owner, payload, now| {
+        engine.accept(owner, payload, now)
+    })
+}
+
+async fn decline(
+    State(app): State<Arc<App>>,
+    body: std::result::Result<Json<Envelope<DeclinePayload>>, JsonRejection>,
+) -> Result<Json<DeclineResponse>> {
+    execute_action(&app, body, |engine, owner, payload, _now| {
+        engine.decline(owner, payload)
+    })
+}

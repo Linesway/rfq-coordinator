@@ -1,4 +1,5 @@
 pub mod api;
+pub mod app;
 pub mod engine;
 pub mod error;
-mod ws;
+mod websocket;

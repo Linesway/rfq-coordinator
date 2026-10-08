@@ -1,12 +1,3 @@
-//! RFQ coordinator executable. Protocol definitions live in `common`;
-//! state transitions and transport handlers live in the server library.
-//!
-//! Contract you must keep (the evaluator relies on it):
-//! - Binary named `server`, built by `cargo build --release -p server`.
-//! - Accepts `--seed <path>`, `--port <u16>`, `--accept-window-secs <u64>`
-//!   (default 5).
-//! - Binds 127.0.0.1:<port> and answers `GET /health` with 200 once ready.
-
 use anyhow::Context;
 use clap::Parser;
 use common::seed::SeedConfig;
@@ -42,14 +33,14 @@ async fn main() -> anyhow::Result<()> {
         seed.traders.len()
     );
 
-    let state = server::api::App::new(seed, args.accept_window_secs)?;
+    let state = server::app::App::new(seed, args.accept_window_secs)?;
     let app = server::api::router(state);
 
-    let addr = format!("127.0.0.1:{}", args.port);
-    let listener = tokio::net::TcpListener::bind(&addr)
+    let address = format!("127.0.0.1:{}", args.port);
+    let listener = tokio::net::TcpListener::bind(&address)
         .await
-        .with_context(|| format!("binding {addr}"))?;
-    tracing::info!("server listening on http://{addr}");
+        .with_context(|| format!("binding {address}"))?;
+    tracing::info!("server listening on http://{address}");
     axum::serve(listener, app).await?;
     Ok(())
 }
